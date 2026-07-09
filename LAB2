@@ -1,0 +1,65 @@
+from collections import deque
+
+# Graph representation
+graph = {
+    'Alice': ['Charlie', 'David'],
+    'Charlie': ['Alice', 'Emma'],
+    'David': ['Alice', 'Emma', 'Fred'],
+    'Emma': ['Charlie', 'David', 'Bob'],
+    'Fred': ['David', 'Bob'],
+    'Bob': ['Emma', 'Fred']
+}
+
+# BFS Algorithm
+def bfs(graph, start, goal):
+    visited = []
+    queue = deque([[start]])
+
+    while queue:
+        path = queue.popleft()
+        node = path[-1]
+
+        if node not in visited:
+            visited.append(node)
+
+            if node == goal:
+                return path
+
+            for neighbor in graph[node]:
+                new_path = list(path)
+                new_path.append(neighbor)
+                queue.append(new_path)
+
+    return None
+
+
+# DFS Algorithm
+def dfs(graph, start, goal):
+    visited = []
+    stack = [[start]]
+
+    while stack:
+        path = stack.pop()
+        node = path[-1]
+
+        if node not in visited:
+            visited.append(node)
+
+            if node == goal:
+                return path
+
+            # Sort neighbors alphabetically (important)
+            for neighbor in sorted(graph[node], reverse=True):
+                new_path = list(path)
+                new_path.append(neighbor)
+                stack.append(new_path)
+
+    return None
+
+
+# Run the algorithms
+start = "Alice"
+goal = "Bob"
+
+print("BFS Path:", bfs(graph, start, goal))
+print("DFS Path:", dfs(graph, start, goal))
