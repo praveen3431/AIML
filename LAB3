@@ -1,44 +1,74 @@
-import pandas as pd
+import csv
+import os
+import sys
 
-# Read the dataset
-data = pd.read_csv("workload_data.csv")
 
-print("===== DATASET =====")
-print(data)
+def ensure_sample_file(fname: str):
+    if not os.path.exists(fname):
+        sample = [
+            ["LatencySensitivity", "DataVolume", "RAMDemand", "NetworkBandwidth", "GPURequired", "HighPerformanceEdge"],
+            ["High", "Large", "High", "Dedicated", "Yes", "Yes"],
+            ["High", "Small", "High", "Shared", "Yes", "No"],
+            ["High", "Large", "High", "Shared", "Yes", "Yes"],
+            ["Low", "Large", "Medium", "Shared", "No", "No"],
+            ["High", "Large", "High", "Dedicated", "No", "Yes"],
+        ]
+        with open(fname, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerows(sample)
 
-# Number of attributes (excluding target class)
-num_attributes = len(data.columns) - 1
 
-# Initialize the most specific hypothesis
-hypothesis = ['0'] * num_attributes
+def is_positive(label: str) -> bool:
+    return label.strip().lower() in ("yes", "y", "1", "true", "positive")
 
-print("\nInitial Hypothesis:")
-print(hypothesis)
 
-print("\nProcessing Positive Examples...\n")
+def find_s(csv_path: str):
+    with open(csv_path, newline="") as f:
+        reader = list(csv.reader(f))
+    if not reader:
+        print("CSV is empty")
+        return
 
-# Process each row
-for index, row in data.iterrows():
+    header = reader[0]
+    data = reader[1:]
+    attrs = header[:-1]
 
-    print(f"Row {index + 1}")
+    MSPEC = "∅"
+    ANY = "?"
 
-    # Check if it is a positive example
-    if row["High-Performance Edge"] == "Yes":
+    h = [MSPEC] * len(attrs)
+    pos_count = 0
 
-        attributes = row[:-1].tolist()
+    print("Attributes:", attrs)
+    print("Starting hypothesis:", h)
+    print()
 
-        # First positive example
-        if hypothesis[0] == '0':
-            hypothesis = attributes.copy()
+    for row in data:
+        if not row or len(row) < len(attrs) + 1:
+            continue
+        row = [c.strip() for c in row]
+        label = row[-1]
+        if is_positive(label):
+            pos_count += 1
+            for i, val in enumerate(row[:-1]):
+                if h[i] == MSPEC:
+                    h[i] = val
+                elif h[i] != val:
+                    h[i] = ANY
 
-        else:
-            # Generalize the hypothesis
-            for i in range(num_attributes):
-                if hypothesis[i] != attributes[i]:
-                    hypothesis[i] = '?'
+            print(f"After positive example #{pos_count}:")
+            print({attrs[i]: h[i] for i in range(len(attrs))})
+            print()
 
-    print("Current Hypothesis:", hypothesis)
-    print("-----------------------------------")
+    print("Final hypothesis:")
+    print({attrs[i]: h[i] for i in range(len(attrs))})
+    return h
 
-print("\nFinal Specific Hypothesis:")
-print(hypothesis)
+
+if __name__ == "__main__":
+    # Use CSV in the script directory if present, else fall back to one in the repo root
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    csv_path = os.path.join(base_dir, "workload_data.csv")
+    ensure_sample_file(csv_path)
+    print(f"Using dataset: {csv_path}\n")
+    find_s(csv_path)
